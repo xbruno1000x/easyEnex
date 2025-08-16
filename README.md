@@ -14,6 +14,7 @@ Instale no seu projeto:
 ```bash
 sampctl install xbruno1000x/easyEnEx
 ```
+(Ou apenas importe o arquivo .inc para sua pasta pawno->includes!)
 
 Inclua no seu código:
 
