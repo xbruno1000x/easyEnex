@@ -79,5 +79,11 @@ A mensagem exibida ao tentar entrar em EnEx fechado pode ser configurada:
 5️⃣ Testando a biblioteca
 
 Para testar, execute no terminal do seu projeto:
+```bash
+sampctl build
+```
 
-sampctl package run
+Após compilar utilize o comando abaixo para iniciar o servidor
+```bash
+sampctl run
+```
