@@ -48,8 +48,6 @@ Funções principais:
 - Enex_Create(name[], entX, entY, entZ, entAng, exX, exY, exZ, exAng, vwid = 0, intid = 0, freeze = false)
 - Enex_Open(id) — abre uma entrada fechada
 - Enex_Close(id) — fecha uma entrada
-- Enex_EnableFreeze(id, bool:status) — habilita/desabilita freeze ao teleportar
-- Enex_Disable(id, bool:status) — desabilita/ativa EnEx para teleporte
 - SetPlayerPosEnEx(playerid, x, y, z, angle, vwid = 0, intid = 0) — teleport manual
 
 3️⃣ Callbacks disponíveis
