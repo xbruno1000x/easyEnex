@@ -12,7 +12,7 @@ Projeto desenvolvido por:
 Instale no seu projeto:
 
 ```bash
-sampctl package install xbruno1000x/easyEnEx
+sampctl install xbruno1000x/easyEnEx
 ```
 
 Inclua no seu código:
