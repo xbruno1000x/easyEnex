@@ -20,6 +20,8 @@ static
     Float: enY[MAX_ENEX],
     Float: enZ[MAX_ENEX],
     Float: enAng[MAX_ENEX],
+    enVirtualID[MAX_ENEX],
+    enInteriorID[MAX_ENEX],
 
     // Saida
     exitPickup[MAX_ENEX],
@@ -47,7 +49,7 @@ Float:GetXYInFrontOfEnex(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:di
 stock Enex_Create(const name[], 
                 Float:entX, Float:entY, Float:entZ, Float:entAng, 
                 Float:exiX, Float:exiY, Float:exiZ, Float:exiAng,
-                vwid = 0, intid = 0, bool:freeze = false)
+                ex_vwid = 0, ex_intid = 0, bool:freeze = false, en_vwid = 0, en_intid = 0)
 {
     new id = Iter_Free(enexID);
     if(id == -1) {
@@ -59,12 +61,14 @@ stock Enex_Create(const name[],
     
     enX[id] = entX; enY[id] = entY; enZ[id] = entZ; enAng[id] = entAng;
     exX[id] = exiX; exY[id] = exiY; exZ[id] = exiZ; exAng[id] = exiAng;
-    exVirtualID[id] = vwid;
-    exInteriorID[id] = intid;
+    exVirtualID[id] = ex_vwid;
+    exInteriorID[id] = ex_intid;
+    enVirtualID[id] = en_vwid;
+    enInteriorID[id] = en_intid;
     enexFreezePlayer[id] = freeze;
     
-    entrancePickup[id] = CreateDynamicPickup(1318, 1, entX, entY, entZ, 0, 0);
-    exitPickup[id] = CreateDynamicPickup(1318, 1, exiX, exiY, exiZ, vwid, intid);
+    entrancePickup[id] = CreateDynamicPickup(1318, 1, entX, entY, entZ, en_vwid, en_intid);
+    exitPickup[id] = CreateDynamicPickup(1318, 1, exiX, exiY, exiZ, ex_vwid, ex_intid);
     
     CreateDynamic3DTextLabel(
         name, 
@@ -121,7 +125,7 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                 // Indo da entrada -> saída
                 new Float:newX, Float:newY;
                 GetXYInFrontOfEnex(exX[id], exY[id], exAng[id], newX, newY, 0.5);
-                SetPlayerPosEnEx(playerid, newX, newY, exZ[id], exAng[id]);
+                SetPlayerPosEnEx(playerid, newX, newY, exZ[id], exAng[id], exVirtualID[id], exInteriorID[id]);
 
                 return 1;
             }
@@ -130,8 +134,8 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                 if(enexDisabled[id])
                     return 1;
 
-                #if defined OnPlayerEnterEnEx
-                    if(!OnPlayerEnterEnEx(playerid, id)) return 1;
+                #if defined OnPlayerExitEnEx
+                    if(!OnPlayerExitEnEx(playerid, id)) return 1;
                 #endif
 
                 if(enexFreezePlayer[id]) {
@@ -141,7 +145,7 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                 // Indo da saída -> entrada
                 new Float:newX, Float:newY;
                 GetXYInFrontOfEnex(enX[id], enY[id], enAng[id], newX, newY, 0.5);
-                SetPlayerPosEnEx(playerid, newX, newY, enZ[id], enAng[id]);
+                SetPlayerPosEnEx(playerid, newX, newY, enZ[id], enAng[id], enVirtualID[id], enInteriorID[id]);
                 return 1;
             }
         }
@@ -163,5 +167,6 @@ stock SetPlayerPosEnEx(playerid, Float:x, Float:y, Float:z, Float:angle, vwid = 
 	SetPlayerFacingAngle(playerid, angle);
     SetPlayerInterior(playerid, intid);
     SetPlayerVirtualWorld(playerid, vwid);
+    SetCameraBehindPlayer(playerid);
 	return 1;
 }
