@@ -8,6 +8,7 @@
 #include <zcmd>
 
 new cjhouse, armario_cj, sweet_house;
+new bool:permissao;
 
 main() {}
 
@@ -73,6 +74,30 @@ public OnPlayerExitEnEx(playerid, enexid)
 		return GameTextForPlayer(playerid, "~w~Voce saiu do armario!", 500, 1);
 		
     return 1;
+}
+
+forward OnPlayerAttemptEnEx(playerid, enexid);
+public OnPlayerAttemptEnEx(playerid, enexid){
+	if(enexid == cjhouse && !permissao)
+	{
+		SendClientMessage(playerid, -1, "Voce nao tem permissao para entrar na casa do CJ! Use /permissao para obter a permissao.");
+		return 0; // Bloqueia o uso do EnEx
+	}
+	return 1;
+}
+
+CMD:permissao(playerid){
+	if(permissao)
+	{
+		permissao = false;
+		SendClientMessage(playerid, -1, "Permissao para entrar na casa do CJ foi removida.");
+	}
+	else
+	{
+		permissao = true;
+		SendClientMessage(playerid, -1, "Permissao para entrar na casa do CJ foi concedida.");
+	}
+	return 1;
 }
 
 CMD:trancar(playerid){

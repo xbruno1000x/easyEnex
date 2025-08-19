@@ -4,11 +4,11 @@
 #include <YSI_Coding\y_timers>
 
 #if !defined MAX_ENEX
-    #define MAX_ENEX                (50)
+    #define MAX_ENEX                (200)
 #endif
 
 #define TEXTLABEL_STREAMDISTANCE    (15.0)
-#define COLOR_YELLOW   				(0xFFFF00FF)
+#define ENEX_YELLOW   				(0xFFFF00FF)
 #if !defined MSG_ENTRADA_FECHADA
     #define MSG_ENTRADA_FECHADA "Essa entrada está fechada no momento!"
 #endif
@@ -84,7 +84,7 @@ stock Enex_Create(const name[],
     
     CreateDynamic3DTextLabel(
         name, 
-        COLOR_YELLOW, 
+        ENEX_YELLOW, 
         entX, entY, entZ, 
         15.0, 
         .testlos = 1, 
@@ -93,7 +93,7 @@ stock Enex_Create(const name[],
 
     CreateDynamic3DTextLabel(
         "Saída", 
-        COLOR_YELLOW, 
+        ENEX_YELLOW, 
         exiX, exiY, exiZ, 
         15.0, 
         .testlos = 1, 
@@ -132,6 +132,11 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                         if(!OnPlayerDeniedEnEx(playerid, id)) return 1;
                     #endif
                     return SendClosedMessage(playerid, id);
+                }
+
+                if(CallLocalFunction("OnPlayerAttemptEnEx", "dd", playerid, id) == 0)
+                {
+                    return 0;
                 }
 
                 #if defined OnPlayerEnterEnEx
