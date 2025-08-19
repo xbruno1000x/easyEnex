@@ -12,8 +12,17 @@
 #if !defined MSG_ENTRADA_FECHADA
     #define MSG_ENTRADA_FECHADA "Essa entrada está fechada no momento!"
 #endif
+#if !defined DEFAULT_PICKUPID
+    #define DEFAULT_PICKUPID 1318 // ID default do pickup do enex
+#endif
+#if !defined DEFAULT_KEY
+    #define DEFAULT_KEY KEY_SECONDARY_ATTACK // Tecla padrão para ativar a entrada/saída
+#endif
 
 static 
+    // Strings
+    enexClosedMsg[MAX_ENEX][64],
+
     // Entrada
     entrancePickup[MAX_ENEX],
     Float: enX[MAX_ENEX],
@@ -37,7 +46,7 @@ static
     bool:enexFreezePlayer[MAX_ENEX],
     bool:enexDisabled[MAX_ENEX];
 
-Float:GetXYInFrontOfEnex(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:distance)
+Float:GetXYInFrontOfEnEx(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:distance)
 {
     q = x;
     w = y;
@@ -49,7 +58,8 @@ Float:GetXYInFrontOfEnex(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:di
 stock Enex_Create(const name[], 
                 Float:entX, Float:entY, Float:entZ, Float:entAng, 
                 Float:exiX, Float:exiY, Float:exiZ, Float:exiAng,
-                ex_vwid = 0, ex_intid = 0, bool:freeze = false, en_vwid = 0, en_intid = 0)
+                ex_vwid = 0, ex_intid = 0, bool:freeze = false, en_vwid = 0, en_intid = 0,
+                pickupid = DEFAULT_PICKUPID, const closedMsg[] = MSG_ENTRADA_FECHADA)
 {
     new id = Iter_Free(enexID);
     if(id == -1) {
@@ -66,9 +76,11 @@ stock Enex_Create(const name[],
     enVirtualID[id] = en_vwid;
     enInteriorID[id] = en_intid;
     enexFreezePlayer[id] = freeze;
+
+    format(enexClosedMsg[id], sizeof(enexClosedMsg), "%s", closedMsg);
     
-    entrancePickup[id] = CreateDynamicPickup(1318, 1, entX, entY, entZ, en_vwid, en_intid);
-    exitPickup[id] = CreateDynamicPickup(1318, 1, exiX, exiY, exiZ, ex_vwid, ex_intid);
+    entrancePickup[id] = CreateDynamicPickup(pickupid, 1, entX, entY, entZ, en_vwid, en_intid);
+    exitPickup[id] = CreateDynamicPickup(pickupid, 1, exiX, exiY, exiZ, ex_vwid, ex_intid);
     
     CreateDynamic3DTextLabel(
         name, 
@@ -106,13 +118,21 @@ stock Enex_Close(id){
     return 1;
 }
 
+stock bool:Enex_IsClosed(id){
+    return enexDisabled[id];
+}
+
 hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
     foreach(new id : enexID){
-        if(newkeys & KEY_SECONDARY_ATTACK){
+        if(newkeys & DEFAULT_KEY){
             if(IsPlayerInRangeOfPoint(playerid, 1.0, enX[id], enY[id], enZ[id]))
             {
-                if(enexDisabled[id])
-                    return SendClosedMessage(playerid);
+                if(enexDisabled[id]){
+                    #if defined OnPlayerDeniedEnEx
+                        if(!OnPlayerDeniedEnEx(playerid, id)) return 1;
+                    #endif
+                    return SendClosedMessage(playerid, id);
+                }
 
                 #if defined OnPlayerEnterEnEx
                     if(!OnPlayerEnterEnEx(playerid, id)) return 1;
@@ -124,15 +144,15 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                 }
                 // Indo da entrada -> saída
                 new Float:newX, Float:newY;
-                GetXYInFrontOfEnex(exX[id], exY[id], exAng[id], newX, newY, 0.5);
+                GetXYInFrontOfEnEx(exX[id], exY[id], exAng[id], newX, newY, 0.5);
                 SetPlayerPosEnEx(playerid, newX, newY, exZ[id], exAng[id], exVirtualID[id], exInteriorID[id]);
 
                 return 1;
             }
             if(IsPlayerInRangeOfPoint(playerid, 1.0, exX[id], exY[id], exZ[id]))
             {
-                if(enexDisabled[id])
-                    return 1;
+                /*if(enexDisabled[id])
+                    return 1;*/
 
                 #if defined OnPlayerExitEnEx
                     if(!OnPlayerExitEnEx(playerid, id)) return 1;
@@ -144,7 +164,7 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                 }
                 // Indo da saída -> entrada
                 new Float:newX, Float:newY;
-                GetXYInFrontOfEnex(enX[id], enY[id], enAng[id], newX, newY, 0.5);
+                GetXYInFrontOfEnEx(enX[id], enY[id], enAng[id], newX, newY, 0.5);
                 SetPlayerPosEnEx(playerid, newX, newY, enZ[id], enAng[id], enVirtualID[id], enInteriorID[id]);
                 return 1;
             }
@@ -157,8 +177,8 @@ timer UnfreezePlayer[1000](playerid) {
     TogglePlayerControllable(playerid, true);
 }
 
-stock SendClosedMessage(playerid){
-    return SendClientMessage(playerid, 0xFF0000FF, MSG_ENTRADA_FECHADA);
+stock SendClosedMessage(playerid, enexid){
+    return SendClientMessage(playerid, 0xFF0000FF, enexClosedMsg[enexid]);
 }
 
 stock SetPlayerPosEnEx(playerid, Float:x, Float:y, Float:z, Float:angle, vwid = 0, intid = 0)
