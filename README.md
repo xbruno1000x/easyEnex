@@ -48,31 +48,44 @@ Funções principais:
 - Enex_Create(name[], entX, entY, entZ, entAng, exX, exY, exZ, exAng, vwid = 0, intid = 0, freeze = false)
 - Enex_Open(id) — abre uma entrada fechada
 - Enex_Close(id) — fecha uma entrada
+- Enex_IsClosed(id) - verifica se uma entrada está fechada
 - SetPlayerPosEnEx(playerid, x, y, z, angle, vwid = 0, intid = 0) — teleport manual
 
 3️⃣ Callbacks disponíveis
 
-- OnPlayerEnterEnEx(playerid, enexid) — chamado quando player entra ou sai
+- OnPlayerEnterEnEx(playerid, enexid) — chamado quando player entra no enex.
+- OnPlayerExitEnEx(playerid, enexid) — chamado quando player sai de um enex.
+- OnPlayerDeniedEnEx(playerid, enexid) - chamado quando o player não pode entrar em um enex.
 
 Exemplo:
 
 ```pawn
-public OnPlayerEnteredEnEx(playerid, enexid)
+public OnPlayerEnterEnEx(playerid, enexid)
 {
     SendClientMessage(playerid, -1, "Você entrou no EnEx com sucesso!");
     return 1;
 }
 ```
 
-4️⃣ Mensagem de entrada fechada
+4️⃣ Personalizações:
 
-A mensagem exibida ao tentar entrar em EnEx fechado pode ser configurada:
+A mensagem exibida ao tentar entrar em EnEx fechado pode ser configurada.
 
+padrão:
 ```pawn
 #if !defined MSG_ENTRADA_FECHADA
     #define MSG_ENTRADA_FECHADA "Essa entrada está fechada no momento!"
 #endif
 ```
+
+mas você pode alterá-la fazendo como no exemplo abaixo:
+```pawn
+#define MSG_ENTRADA_FECHADA 	"Altere aqui a mensagem de entrada fechada padrão!" // Você pode alterar a mensagem de entrada fechada padrão aqui
+#define DEFAULT_PICKUPID 		1273 												// ID do pickup de saída, você pode alterar para outro ID de pickup se desejar
+#define DEFAULT_KEY 			KEY_SPRINT											// Tecla padrão para abrir o EnEx, por padrão é a tecla F. Nesse exemplo alteramos para espaço.
+#include <easyEnex>
+```
+Esse procedimento se aplica ao pickup e key padrões também.
 
 5️⃣ Testando a biblioteca
 
