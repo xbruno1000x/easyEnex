@@ -37,6 +37,8 @@ public OnGameModeInit()
 		.closedMsg = "O sweet nao esta em casa!"// Mensagem personalizada quando a casa estiver fechada
 	);
 	Enex_Close(sweet_house);
+
+	Enex_SetSchedule(armario_cj, 8, 20);
 }
 
 public OnPlayerSpawn(playerid){
@@ -83,6 +85,18 @@ public OnPlayerAttemptEnEx(playerid, enexid){
 		SendClientMessage(playerid, -1, "Voce nao tem permissao para entrar na casa do CJ! Use /permissao para obter a permissao.");
 		return 0; // Bloqueia o uso do EnEx
 	}
+	return 1;
+}
+
+CMD:proibircj(playerid){
+	Enex_CloseForPlayer(playerid, cjhouse);
+	SendClientMessage(playerid, -1, "Voce foi proibido de entrar na casa do CJ.");
+	return 1;
+}
+
+CMD:permitircj(playerid){
+	Enex_OpenForPlayer(playerid, cjhouse);
+	SendClientMessage(playerid, -1, "Voce foi autorizado a entrar na casa do CJ.");
 	return 1;
 }
 

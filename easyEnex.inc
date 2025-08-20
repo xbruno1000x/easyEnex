@@ -41,10 +41,16 @@ static
     exVirtualID[MAX_ENEX],
     exInteriorID[MAX_ENEX],
 
+    // Agendamento
+    enexStartHour[MAX_ENEX],
+    enexEndHour[MAX_ENEX],
+    bool:enexHasSchedule[MAX_ENEX],
+
     // Outros
     Iterator: enexID<MAX_ENEX>,
     bool:enexFreezePlayer[MAX_ENEX],
-    bool:enexDisabled[MAX_ENEX];
+    bool:enexDisabled[MAX_ENEX],
+    bool:enexDisabledForPlayer[MAX_ENEX][MAX_PLAYERS];
 
 Float:GetXYInFrontOfEnEx(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:distance)
 {
@@ -110,6 +116,14 @@ stock Enex_Open(id){
     return 1;
 }
 
+stock Enex_OpenForPlayer(playerid, enexid)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX) return 0;
+
+    enexDisabledForPlayer[enexid][playerid] = false;
+    return 1;
+}
+
 stock Enex_Close(id){
     if(enexDisabled[id])
         return 0;
@@ -118,20 +132,69 @@ stock Enex_Close(id){
     return 1;
 }
 
+stock Enex_CloseForPlayer(playerid, enexid)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX) return 0;
+
+    enexDisabledForPlayer[enexid][playerid] = true;
+    return 1;
+}
+
 stock bool:Enex_IsClosed(id){
     return enexDisabled[id];
 }
+
+stock Enex_SetSchedule(enexid, startHour, endHour)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX)
+        return 0;
+
+    enexStartHour[enexid] = startHour;
+    enexEndHour[enexid] = endHour;
+    enexHasSchedule[enexid] = true;
+    return 1;
+}
+
+stock Enex_CheckSchedule(enexid)
+{
+    new hour, minute, second;
+    gettime(hour, minute, second);
+
+    if(!enexHasSchedule[enexid])
+        return 1;
+
+    new start = enexStartHour[enexid];
+    new end   = enexEndHour[enexid];
+
+    if(start < end)
+    {
+        if(hour >= start && hour < end)
+            return 1;
+    }
+    else if(start > end)
+    {
+        if(hour >= start || hour < end)
+            return 1;
+    }
+
+    return 0;
+}
+
 
 hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
     foreach(new id : enexID){
         if(newkeys & DEFAULT_KEY){
             if(IsPlayerInRangeOfPoint(playerid, 1.0, enX[id], enY[id], enZ[id]))
             {
-                if(enexDisabled[id]){
+                if(enexDisabled[id] || enexDisabledForPlayer[id][playerid]){
                     #if defined OnPlayerDeniedEnEx
                         if(!OnPlayerDeniedEnEx(playerid, id)) return 1;
                     #endif
                     return SendClosedMessage(playerid, id);
+                }
+
+                if(!Enex_CheckSchedule(id)){
+                    return SendScheduleMessage(playerid, id);
                 }
 
                 if(CallLocalFunction("OnPlayerAttemptEnEx", "dd", playerid, id) == 0)
@@ -185,6 +248,22 @@ timer UnfreezePlayer[1000](playerid) {
 stock SendClosedMessage(playerid, enexid){
     return SendClientMessage(playerid, 0xFF0000FF, enexClosedMsg[enexid]);
 }
+
+stock SendScheduleMessage(playerid, enexid)
+{
+    new msg[96];
+    new start = enexStartHour[enexid];
+    new end   = enexEndHour[enexid];
+
+    if (start < end)
+    {
+        format(msg, sizeof(msg), "Entrada fechada! Horário de funcionamento: %02d:00 - %02d:00", start, end);
+    } else {
+        format(msg, sizeof(msg), "Entrada fechada! Horário de funcionamento: %02d:00 - %02d:00", start, end + 24);
+    }
+    return SendClientMessage(playerid, 0xFF0000FF, msg);
+}
+
 
 stock SetPlayerPosEnEx(playerid, Float:x, Float:y, Float:z, Float:angle, vwid = 0, intid = 0)
 {
