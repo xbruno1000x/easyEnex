@@ -36,17 +36,42 @@ public OnGameModeInit()
 		0, 1, true, .pickupid = 19606,			// VirtualWorld, Interior, Freeze, virtualentrada, interiorentrada, pickupid
 		.closedMsg = "O sweet nao esta em casa!"// Mensagem personalizada quando a casa estiver fechada
 	);
+
+	Enex_Create(
+		"A Casa Do OG Loc",
+		2486.37, -1644.88, 14.07, 180.91,
+		512.92, -11.69, 1001.56, 180.0,
+		0, 3, true,
+		.minLevel = 5,                // precisa nível 5
+		.entryFee = 1000              // e pagar $1000 para entrar
+	);
+
 	Enex_Close(sweet_house);
 
 	Enex_SetSchedule(armario_cj, 8, 20);
 }
 
 public OnPlayerSpawn(playerid){
+	new money = 1000 + random(4000);
 	SetPlayerPosEnEx(playerid, 2495.26, -1684.67, 13.51, 179.31);
+	GivePlayerMoney(playerid, money);
+	SetPlayerScore(playerid, random(10));
 }
 
-forward OnPlayerDeniedEnEx(playerid, enexid);
-public OnPlayerDeniedEnEx(playerid, enexid){
+forward OnPlayerDeniedEnEx(playerid, enexid, reason);
+public OnPlayerDeniedEnEx(playerid, enexid, reason){
+	switch(reason){
+		case REASON_CLOSED:{
+			return GameTextForPlayer(playerid, "~r~Esta entrada esta fechada!", 500, 1);
+		}
+		case REASON_LEVEL:{
+			return GameTextForPlayer(playerid, "~r~Voce nao tem nivel suficiente para entrar aqui!", 500, 1);
+		}
+		case REASON_MONEY:{
+			return GameTextForPlayer(playerid, "~r~Voce nao tem dinheiro suficiente para entrar aqui!", 500, 1);
+		}
+	}
+
 	if(enexid == sweet_house){
 		SetPlayerWantedLevel(playerid, 6);
 		return GameTextForPlayer(playerid, "~w~A policia te flagrou invadindo a casa do Sweet!", 500, 1);

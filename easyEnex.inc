@@ -19,6 +19,10 @@
     #define DEFAULT_KEY KEY_SECONDARY_ATTACK // Tecla padrão para ativar a entrada/saída
 #endif
 
+#define REASON_CLOSED 0
+#define REASON_LEVEL  1
+#define REASON_MONEY  2
+
 static 
     // Strings
     enexClosedMsg[MAX_ENEX][64],
@@ -50,7 +54,9 @@ static
     Iterator: enexID<MAX_ENEX>,
     bool:enexFreezePlayer[MAX_ENEX],
     bool:enexDisabled[MAX_ENEX],
-    bool:enexDisabledForPlayer[MAX_ENEX][MAX_PLAYERS];
+    bool:enexDisabledForPlayer[MAX_ENEX][MAX_PLAYERS],
+    enexMinLevel[MAX_ENEX],   // nível mínimo para entrar
+    enexEntryFee[MAX_ENEX];   // taxa de entrada em dinheiro
 
 Float:GetXYInFrontOfEnEx(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:distance)
 {
@@ -65,7 +71,8 @@ stock Enex_Create(const name[],
                 Float:entX, Float:entY, Float:entZ, Float:entAng, 
                 Float:exiX, Float:exiY, Float:exiZ, Float:exiAng,
                 ex_vwid = 0, ex_intid = 0, bool:freeze = false, en_vwid = 0, en_intid = 0,
-                pickupid = DEFAULT_PICKUPID, const closedMsg[] = MSG_ENTRADA_FECHADA)
+                pickupid = DEFAULT_PICKUPID, const closedMsg[] = MSG_ENTRADA_FECHADA,
+                minLevel = 0, entryFee = 0)
 {
     new id = Iter_Free(enexID);
     if(id == -1) {
@@ -82,6 +89,8 @@ stock Enex_Create(const name[],
     enVirtualID[id] = en_vwid;
     enInteriorID[id] = en_intid;
     enexFreezePlayer[id] = freeze;
+    enexMinLevel[id] = minLevel;
+    enexEntryFee[id] = entryFee;
 
     format(enexClosedMsg[id], sizeof(enexClosedMsg), "%s", closedMsg);
     
@@ -180,26 +189,55 @@ stock Enex_CheckSchedule(enexid)
     return 0;
 }
 
+stock Enex_SetMinLevel(enexid, level)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX) return 0;
+    enexMinLevel[enexid] = level;
+    return 1;
+}
+
+stock Enex_SetEntryFee(enexid, fee)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX) return 0;
+    enexEntryFee[enexid] = fee;
+    return 1;
+}
 
 hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
     foreach(new id : enexID){
         if(newkeys & DEFAULT_KEY){
             if(IsPlayerInRangeOfPoint(playerid, 1.0, enX[id], enY[id], enZ[id]))
             {
-                if(enexDisabled[id] || enexDisabledForPlayer[id][playerid]){
+                if(CallLocalFunction("OnPlayerAttemptEnEx", "dd", playerid, id) == 0)
+                {
+                    return 0;
+                }
+
+                if(enexDisabled[id]){
                     #if defined OnPlayerDeniedEnEx
-                        if(!OnPlayerDeniedEnEx(playerid, id)) return 1;
+                        if(!OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED)) return 0;
                     #endif
                     return SendClosedMessage(playerid, id);
                 }
 
-                if(!Enex_CheckSchedule(id)){
-                    return SendScheduleMessage(playerid, id);
+                if(GetPlayerScore(playerid) < enexMinLevel[id])
+                {
+                    #if defined OnPlayerDeniedEnEx
+                        OnPlayerDeniedEnEx(playerid, id, REASON_LEVEL);
+                    #endif
+                    return 1;
                 }
 
-                if(CallLocalFunction("OnPlayerAttemptEnEx", "dd", playerid, id) == 0)
+                if(enexEntryFee[id] > 0)
                 {
-                    return 0;
+                    if(GetPlayerMoney(playerid) < enexEntryFee[id])
+                    {
+                        #if defined OnPlayerDeniedEnEx
+                            OnPlayerDeniedEnEx(playerid, id, REASON_MONEY);
+                        #endif
+                        return 1;
+                    }
+                    GivePlayerMoney(playerid, -enexEntryFee[id]); 
                 }
 
                 #if defined OnPlayerEnterEnEx
