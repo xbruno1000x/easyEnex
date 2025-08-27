@@ -25,7 +25,9 @@
 
 static 
     // Strings
+    enexName[MAX_ENEX][32],
     enexClosedMsg[MAX_ENEX][64],
+    Text3D:entranceLabel[MAX_ENEX],
 
     // Entrada
     entrancePickup[MAX_ENEX],
@@ -92,12 +94,13 @@ stock Enex_Create(const name[],
     enexMinLevel[id] = minLevel;
     enexEntryFee[id] = entryFee;
 
+    format(enexName[id], sizeof(enexName), "%s", name);
     format(enexClosedMsg[id], sizeof(enexClosedMsg), "%s", closedMsg);
     
     entrancePickup[id] = CreateDynamicPickup(pickupid, 1, entX, entY, entZ, en_vwid, en_intid);
     exitPickup[id] = CreateDynamicPickup(pickupid, 1, exiX, exiY, exiZ, ex_vwid, ex_intid);
     
-    CreateDynamic3DTextLabel(
+    entranceLabel[id] = CreateDynamic3DTextLabel(
         name, 
         ENEX_YELLOW, 
         entX, entY, entZ, 
@@ -114,6 +117,8 @@ stock Enex_Create(const name[],
         .testlos = 1, 
         .streamdistance = TEXTLABEL_STREAMDISTANCE
     );
+
+    UpdateEnexLabel(id);
     return id;
 }
 
@@ -122,6 +127,7 @@ stock Enex_Open(id){
         return 0;
 
     enexDisabled[id] = false;
+    UpdateEnexLabel(id);
     return 1;
 }
 
@@ -138,6 +144,7 @@ stock Enex_Close(id){
         return 0;
 
     enexDisabled[id] = true;
+    UpdateEnexLabel(id);
     return 1;
 }
 
@@ -161,6 +168,7 @@ stock Enex_SetSchedule(enexid, startHour, endHour)
     enexStartHour[enexid] = startHour;
     enexEndHour[enexid] = endHour;
     enexHasSchedule[enexid] = true;
+    UpdateEnexLabel(enexid);
     return 1;
 }
 
@@ -193,6 +201,7 @@ stock Enex_SetMinLevel(enexid, level)
 {
     if(enexid < 0 || enexid >= MAX_ENEX) return 0;
     enexMinLevel[enexid] = level;
+    UpdateEnexLabel(id);
     return 1;
 }
 
@@ -200,6 +209,47 @@ stock Enex_SetEntryFee(enexid, fee)
 {
     if(enexid < 0 || enexid >= MAX_ENEX) return 0;
     enexEntryFee[enexid] = fee;
+    UpdateEnexLabel(id);
+    return 1;
+}
+
+stock UpdateEnexLabel(enexid)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX) return 0;
+
+    new msg[256];
+    new statusText[32];
+    new scheduleText[32];
+
+    if(enexDisabled[enexid])
+        format(statusText, sizeof(statusText), "Fechado");
+    else
+        format(statusText, sizeof(statusText), "Aberto");
+
+    if(enexHasSchedule[enexid])
+    {
+        new start = enexStartHour[enexid];
+        new end   = enexEndHour[enexid];
+        if(start < end)
+            format(scheduleText, sizeof(scheduleText), "\nHorario: %02d:00 - %02d:00", start, end);
+        else
+            format(scheduleText, sizeof(scheduleText), "\nHorario: %02d:00 - %02d:00", start, end + 24);
+    }
+
+    if(enexMinLevel[enexid] > 0 && enexEntryFee[enexid] > 0)
+        format(msg, sizeof(msg), "%s \nStatus: %s \nNivel minimo: %d \nTaxa: $%d%s",
+               enexName[enexid], statusText, enexMinLevel[enexid], enexEntryFee[enexid], scheduleText);
+    else if(enexMinLevel[enexid] > 0)
+        format(msg, sizeof(msg), "%s \nStatus: %s \nNivel minimo: %d%s",
+               enexName[enexid], statusText, enexMinLevel[enexid], scheduleText);
+    else if(enexEntryFee[enexid] > 0)
+        format(msg, sizeof(msg), "%s \nStatus: %s \nTaxa: $%d%s",
+               enexName[enexid], statusText, enexEntryFee[enexid], scheduleText);
+    else
+        format(msg, sizeof(msg), "%s \nStatus: %s%s",
+               enexName[enexid], statusText, scheduleText);
+
+    UpdateDynamic3DTextLabelText(entranceLabel[enexid], ENEX_YELLOW, msg);
     return 1;
 }
 
@@ -218,6 +268,13 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                         if(!OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED)) return 0;
                     #endif
                     return SendClosedMessage(playerid, id);
+                }
+
+                if(enexHasSchedule[id] && !Enex_CheckSchedule(id)) {
+                    #if defined OnPlayerDeniedEnEx
+                        OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED);
+                    #endif
+                    return SendScheduleMessage(playerid, id);
                 }
 
                 if(GetPlayerScore(playerid) < enexMinLevel[id])
@@ -301,7 +358,6 @@ stock SendScheduleMessage(playerid, enexid)
     }
     return SendClientMessage(playerid, 0xFF0000FF, msg);
 }
-
 
 stock SetPlayerPosEnEx(playerid, Float:x, Float:y, Float:z, Float:angle, vwid = 0, intid = 0)
 {
