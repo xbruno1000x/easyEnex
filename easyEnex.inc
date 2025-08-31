@@ -56,7 +56,7 @@ static
     Iterator: enexID<MAX_ENEX>,
     bool:enexFreezePlayer[MAX_ENEX],
     bool:enexDisabled[MAX_ENEX],
-    bool:enexDisabledForPlayer[MAX_ENEX][MAX_PLAYERS],
+    bool:enexOpenForPlayer[MAX_ENEX][MAX_PLAYERS],
     enexMinLevel[MAX_ENEX],   // nível mínimo para entrar
     enexEntryFee[MAX_ENEX];   // taxa de entrada em dinheiro
 
@@ -135,7 +135,7 @@ stock Enex_OpenForPlayer(playerid, enexid)
 {
     if(enexid < 0 || enexid >= MAX_ENEX) return 0;
 
-    enexDisabledForPlayer[enexid][playerid] = false;
+    enexOpenForPlayer[enexid][playerid] = true;
     return 1;
 }
 
@@ -152,7 +152,7 @@ stock Enex_CloseForPlayer(playerid, enexid)
 {
     if(enexid < 0 || enexid >= MAX_ENEX) return 0;
 
-    enexDisabledForPlayer[enexid][playerid] = true;
+    enexOpenForPlayer[enexid][playerid] = false;
     return 1;
 }
 
@@ -193,7 +193,6 @@ stock Enex_CheckSchedule(enexid)
         if(hour >= start || hour < end)
             return 1;
     }
-
     return 0;
 }
 
@@ -263,9 +262,10 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                     return 0;
                 }
 
-                if(enexDisabled[id]){
+                if (enexDisabled[id] && !enexOpenForPlayer[id][playerid] || !enexDisabled[id] && enexOpenForPlayer[id][playerid])
+                {
                     #if defined OnPlayerDeniedEnEx
-                        if(!OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED)) return 0;
+                        if (!OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED)) return 0;
                     #endif
                     return SendClosedMessage(playerid, id);
                 }
