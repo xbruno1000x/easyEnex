@@ -10,13 +10,17 @@
 #define TEXTLABEL_STREAMDISTANCE    (15.0)
 #define ENEX_YELLOW   				(0xFFFF00FF)
 #if !defined MSG_ENTRADA_FECHADA
-    #define MSG_ENTRADA_FECHADA "Essa entrada está fechada no momento!"
+    #define MSG_ENTRADA_FECHADA "Essa entrada esta fechada no momento!"
 #endif
 #if !defined DEFAULT_PICKUPID
     #define DEFAULT_PICKUPID 1318 // ID default do pickup do enex
 #endif
 #if !defined DEFAULT_KEY
     #define DEFAULT_KEY KEY_SECONDARY_ATTACK // Tecla padrão para ativar a entrada/saída
+#endif
+
+#if !defined ENEX_SEND_CLOSED_MESSAGE
+    #define ENEX_SEND_CLOSED_MESSAGE 1
 #endif
 
 #define REASON_CLOSED 0
@@ -172,6 +176,13 @@ stock Enex_SetSchedule(enexid, startHour, endHour)
     return 1;
 }
 
+stock Enex_SetSendClosedMessage(flag)
+{
+    new enexSendClosedMessage = ENEX_SEND_CLOSED_MESSAGE;
+    enexSendClosedMessage = flag ? 1 : 0;
+    return 1;
+}
+
 stock Enex_CheckSchedule(enexid)
 {
     new hour, minute, second;
@@ -257,17 +268,23 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
         if(newkeys & DEFAULT_KEY){
             if(IsPlayerInRangeOfPoint(playerid, 1.0, enX[id], enY[id], enZ[id]))
             {
-                if(CallLocalFunction("OnPlayerAttemptEnEx", "dd", playerid, id) == 0)
-                {
-                    return 0;
-                }
-
+                #if defined OnPlayerAttemptEnEx
+                    if(CallLocalFunction("OnPlayerAttemptEnEx", "dd", playerid, id) == 0)
+                    {
+                        return 0;
+                    }
+                #endif
                 if (enexDisabled[id] && !enexOpenForPlayer[id][playerid] || !enexDisabled[id] && enexOpenForPlayer[id][playerid])
                 {
                     #if defined OnPlayerDeniedEnEx
                         if (!OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED)) return 0;
                     #endif
-                    return SendClosedMessage(playerid, id);
+                    #if ENEX_SEND_CLOSED_MESSAGE
+                        if (enexSendClosedMessage) return SendClosedMessage(playerid, id);
+                        return 1;
+                    #else
+                        return 1;
+                    #endif
                 }
 
                 if(enexHasSchedule[id] && !Enex_CheckSchedule(id)) {
