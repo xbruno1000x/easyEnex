@@ -23,6 +23,28 @@
     #define ENEX_SEND_CLOSED_MESSAGE 1
 #endif
 
+// ============================================================================
+// FUNÇÕES DE DINHEIRO PERSONALIZÁVEIS
+// ============================================================================
+
+// Define estas funções no seu gamemode ANTES de incluir easyEnex para customizar
+// Exemplo:
+// #define Enex_GetPlayerMoney(%0)    MinhaFuncaoGetMoney(%0)
+// #define Enex_GivePlayerMoney(%0,%1) MinhaFuncaoDarDinheiro(%0,%1)
+// #include <easyEnex>
+
+#if !defined Enex_GetPlayerMoney
+    #define Enex_GetPlayerMoney(%0) GetPlayerMoney(%0)
+#endif
+
+#if !defined Enex_GivePlayerMoney
+    #define Enex_GivePlayerMoney(%0,%1) GivePlayerMoney(%0,%1)
+#endif
+
+// ============================================================================
+// CONSTANTES
+// ============================================================================
+
 #define REASON_CLOSED 0
 #define REASON_LEVEL  1
 #define REASON_MONEY  2
@@ -304,14 +326,14 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
 
                 if(enexEntryFee[id] > 0)
                 {
-                    if(GetPlayerMoney(playerid) < enexEntryFee[id])
+                    if(Enex_GetPlayerMoney(playerid) < enexEntryFee[id])
                     {
                         #if defined OnPlayerDeniedEnEx
                             OnPlayerDeniedEnEx(playerid, id, REASON_MONEY);
                         #endif
                         return 1;
                     }
-                    GivePlayerMoney(playerid, -enexEntryFee[id]); 
+                    Enex_GivePlayerMoney(playerid, -enexEntryFee[id]); 
                 }
 
                 #if defined OnPlayerEnterEnEx
