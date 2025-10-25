@@ -85,7 +85,8 @@ static
     bool:enexOpenForPlayer[MAX_ENEX][MAX_PLAYERS],
     enexMinLevel[MAX_ENEX],   // nível mínimo para entrar
     enexEntryFee[MAX_ENEX],   // taxa de entrada em dinheiro
-    bool:enexSendClosedMessage = true; // enviar mensagem ao tentar entrar em enex fechado
+    bool:enexSendClosedMessage = true, // enviar mensagem ao tentar entrar em enex fechado
+    PlayerLastEnex[MAX_PLAYERS] = {-1, ...}; // Armazena o ID do último enex usado pelo jogador
 
 Float:GetXYInFrontOfEnEx(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:distance)
 {
@@ -348,27 +349,67 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                 new Float:newX, Float:newY;
                 GetXYInFrontOfEnEx(exX[id], exY[id], exAng[id], newX, newY, 0.5);
                 SetPlayerPosEnEx(playerid, newX, newY, exZ[id], exAng[id], exVirtualID[id], exInteriorID[id]);
+                PlayerLastEnex[playerid] = id;
 
                 return 1;
             }
+            
+            // Verifica saída usando o enex armazenado (evita conflitos de VW)
+            if(PlayerLastEnex[playerid] != -1)
+            {
+                new lastid = PlayerLastEnex[playerid];
+                
+                // Verifica se o jogador está na posição de saída do enex que ele entrou
+                if(IsPlayerInRangeOfPoint(playerid, 1.0, exX[lastid], exY[lastid], exZ[lastid]))
+                {
+                    // Verifica se está no mundo virtual correto
+                    if(GetPlayerVirtualWorld(playerid) == exVirtualID[lastid])
+                    {
+                        #if defined OnPlayerExitEnEx
+                            if(!OnPlayerExitEnEx(playerid, lastid)) return 1;
+                        #endif
+
+                        if(enexFreezePlayer[lastid]) {
+                            TogglePlayerControllable(playerid, false);
+                            defer UnfreezePlayer(playerid);
+                        }
+                        // Indo da saída -> entrada
+                        new Float:newX, Float:newY;
+                        GetXYInFrontOfEnEx(enX[lastid], enY[lastid], enAng[lastid], newX, newY, 0.5);
+                        SetPlayerPosEnEx(playerid, newX, newY, enZ[lastid], enAng[lastid], enVirtualID[lastid], enInteriorID[lastid]);
+                        
+                        // Limpa o registro após a saída
+                        PlayerLastEnex[playerid] = -1;
+                        
+                        return 1;
+                    }
+                }
+            }
+            
+            // Fallback: busca por coordenadas (para compatibilidade com uso direto de SetPlayerPos)
             if(IsPlayerInRangeOfPoint(playerid, 1.0, exX[id], exY[id], exZ[id]))
             {
-                /*if(enexDisabled[id])
-                    return 1;*/
+                // Verifica se está no mundo virtual correto
+                if(GetPlayerVirtualWorld(playerid) == exVirtualID[id])
+                {
+                    #if defined OnPlayerExitEnEx
+                        if(!OnPlayerExitEnEx(playerid, id)) return 1;
+                    #endif
 
-                #if defined OnPlayerExitEnEx
-                    if(!OnPlayerExitEnEx(playerid, id)) return 1;
-                #endif
-
-                if(enexFreezePlayer[id]) {
-                    TogglePlayerControllable(playerid, false);
-                    defer UnfreezePlayer(playerid);
+                    if(enexFreezePlayer[id]) {
+                        TogglePlayerControllable(playerid, false);
+                        defer UnfreezePlayer(playerid);
+                    }
+                    // Indo da saída -> entrada
+                    new Float:newX, Float:newY;
+                    GetXYInFrontOfEnEx(enX[id], enY[id], enAng[id], newX, newY, 0.5);
+                    SetPlayerPosEnEx(playerid, newX, newY, enZ[id], enAng[id], enVirtualID[id], enInteriorID[id]);
+                    
+                    // Limpa o registro
+                    PlayerLastEnex[playerid] = -1;
+                    
+                    return 1;
                 }
-                // Indo da saída -> entrada
-                new Float:newX, Float:newY;
-                GetXYInFrontOfEnEx(enX[id], enY[id], enAng[id], newX, newY, 0.5);
-                SetPlayerPosEnEx(playerid, newX, newY, enZ[id], enAng[id], enVirtualID[id], enInteriorID[id]);
-                return 1;
             }
         }
     }
@@ -377,6 +418,11 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
 
 timer UnfreezePlayer[1000](playerid) {
     TogglePlayerControllable(playerid, true);
+}
+
+hook OnPlayerDisconnect(playerid, reason) {
+    PlayerLastEnex[playerid] = -1;
+    return 1;
 }
 
 stock SendClosedMessage(playerid, enexid){
