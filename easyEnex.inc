@@ -62,7 +62,8 @@ static
     bool:enexDisabled[MAX_ENEX],
     bool:enexOpenForPlayer[MAX_ENEX][MAX_PLAYERS],
     enexMinLevel[MAX_ENEX],   // nível mínimo para entrar
-    enexEntryFee[MAX_ENEX];   // taxa de entrada em dinheiro
+    enexEntryFee[MAX_ENEX],   // taxa de entrada em dinheiro
+    bool:enexSendClosedMessage = true; // enviar mensagem ao tentar entrar em enex fechado
 
 Float:GetXYInFrontOfEnEx(Float:x, Float:y, Float:a, &Float:q, &Float:w, Float:distance)
 {
@@ -176,10 +177,9 @@ stock Enex_SetSchedule(enexid, startHour, endHour)
     return 1;
 }
 
-stock Enex_SetSendClosedMessage(flag)
+stock Enex_SetSendClosedMessage(bool:flag)
 {
-    new enexSendClosedMessage = ENEX_SEND_CLOSED_MESSAGE;
-    enexSendClosedMessage = flag ? 1 : 0;
+    enexSendClosedMessage = flag;
     return 1;
 }
 
