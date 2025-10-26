@@ -1,3 +1,34 @@
+/*
+ * easyEnex.inc - Biblioteca de entradas/saídas (Enex) para SA-MP
+ *
+ * Descrição:
+ *   Biblioteca leve para gerenciar entradas/saídas (enex) no servidor SA-MP.
+ *   Recursos principais:
+ *     - Criação e remoção de enexs com pickups dinâmicos
+ *     - Labels 3D dinâmicos para entradas
+ *     - Controle de permissões por jogador (abrir/fechar/enex por jogador)
+ *     - Agendamento de funcionamento, taxa de entrada e requisito de nível
+ *     - Integração com YSI (iterators/hooks/timers) e Streamer
+ *
+ * Uso:
+ *   - Inclua esta biblioteca antes de módulos que dependem dela:
+ *       #include <easyEnex>
+ *   - Para customizar o sistema monetário do seu gamemode, defina as macros
+ *     Enex_GetPlayerMoney/Enex_GivePlayerMoney antes de incluir a biblioteca.
+ *
+ * Dependências:
+ *   - YSI (y_iterate, y_hooks, y_timers)
+ *   - Streamer (para CreateDynamicPickup/CreateDynamic3DTextLabel)
+ *
+ * Autor: xBruno1000x
+ * Versão: 1.8.0
+ * Licença: MIT (veja LICENSE)
+ *
+ * Observações:
+ *   - Projetada para ser compatível com módulos opcionais (ex.: easyHouses.inc).
+ *   - Alterações nesta biblioteca podem afetar módulos que gerenciam labels/pickups.
+ */
+
 #include <YSI_Data\y_iterate>
 #include <streamer>
 #include <YSI_Coding\y_hooks>
@@ -184,6 +215,18 @@ stock Enex_CloseForPlayer(playerid, enexid)
     return 1;
 }
 
+stock Enex_DestroyEntranceLabel(enexid)
+{
+    if(enexid < 0 || enexid >= MAX_ENEX) return 0;
+    
+    if(entranceLabel[enexid] != Text3D:INVALID_3DTEXT_ID)
+    {
+        DestroyDynamic3DTextLabel(entranceLabel[enexid]);
+        entranceLabel[enexid] = Text3D:INVALID_3DTEXT_ID;
+    }
+    return 1;
+}
+
 stock bool:Enex_IsClosed(id){
     return enexDisabled[id];
 }
@@ -297,7 +340,7 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
                         return 0;
                     }
                 #endif
-                if (enexDisabled[id] && !enexOpenForPlayer[id][playerid] || !enexDisabled[id] && enexOpenForPlayer[id][playerid])
+                if (enexDisabled[id] && !enexOpenForPlayer[id][playerid])
                 {
                     #if defined OnPlayerDeniedEnEx
                         if (!OnPlayerDeniedEnEx(playerid, id, REASON_CLOSED)) return 0;
@@ -452,4 +495,23 @@ stock SetPlayerPosEnEx(playerid, Float:x, Float:y, Float:z, Float:angle, vwid = 
     SetPlayerVirtualWorld(playerid, vwid);
     SetCameraBehindPlayer(playerid);
 	return 1;
+}
+
+/**
+ * Enex_UpdateEntrancePickup
+ *
+ * Atualiza o modelo do pickup de entrada de um enex
+ *
+ * @param enexid      ID do enex
+ * @param pickupModel Novo modelo do pickup
+ * @return 1 em sucesso, 0 em falha
+ */
+stock Enex_UpdateEntrancePickup(enexid, pickupModel)
+{
+    if(!Iter_Contains(enexID, enexid))
+        return 0;
+
+    DestroyDynamicPickup(entrancePickup[enexid]);
+    entrancePickup[enexid] = CreateDynamicPickup(pickupModel, 1, enX[enexid], enY[enexid], enZ[enexid], enVirtualID[enexid], enInteriorID[enexid]);
+    return 1;
 }
