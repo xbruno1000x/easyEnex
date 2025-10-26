@@ -555,13 +555,12 @@ Este projeto está sob a licença especificada no arquivo [LICENSE](LICENSE).
 ## 📞 Suporte
 
 - **Issues:** [GitHub Issues](https://github.com/xbruno1000x/easyEnEx/issues)
-- **Discussões:** [GitHub Discussions](https://github.com/xbruno1000x/easyEnEx/discussions)
 
 ---
 
 ## 📊 Status do Projeto
 
-![GitHub release](https://img.shields.io/badge/release-v1.2.0-blue)
+![GitHub release](https://img.shields.io/badge/release-v1.8.0-blue)
 ![GitHub last commit](https://img.shields.io/badge/last%20commit-october%202025-green)
 ![Status](https://img.shields.io/badge/status-active-success)
 
