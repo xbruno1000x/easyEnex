@@ -85,6 +85,7 @@ static
     enexName[MAX_ENEX][32],
     enexClosedMsg[MAX_ENEX][64],
     Text3D:entranceLabel[MAX_ENEX],
+    entranceMapIcon[MAX_ENEX],
 
     // Entrada
     entrancePickup[MAX_ENEX],
@@ -249,6 +250,29 @@ stock Enex_SetSendClosedMessage(bool:flag)
     return 1;
 }
 
+stock Enex_SetIcon(enexid, iconid, color = -1, MAPICON:style = MAPICON_LOCAL, Float:streamdistance = STREAMER_MAP_ICON_SD)
+{
+    if(!Iter_Contains(enexID, enexid))
+        return 0;
+
+    if(entranceMapIcon[enexid])
+        DestroyDynamicMapIcon(entranceMapIcon[enexid]);
+
+    entranceMapIcon[enexid] = CreateDynamicMapIcon(
+        enX[enexid],
+        enY[enexid],
+        enZ[enexid],
+        iconid,
+        color,
+        enVirtualID[enexid],
+        enInteriorID[enexid],
+        -1,
+        streamdistance,
+        style
+    );
+    return 1;
+}
+
 stock Enex_CheckSchedule(enexid)
 {
     new hour, minute, second;
@@ -277,7 +301,7 @@ stock Enex_SetMinLevel(enexid, level)
 {
     if(enexid < 0 || enexid >= MAX_ENEX) return 0;
     enexMinLevel[enexid] = level;
-    UpdateEnexLabel(id);
+    UpdateEnexLabel(enexid);
     return 1;
 }
 
@@ -285,7 +309,7 @@ stock Enex_SetEntryFee(enexid, fee)
 {
     if(enexid < 0 || enexid >= MAX_ENEX) return 0;
     enexEntryFee[enexid] = fee;
-    UpdateEnexLabel(id);
+    UpdateEnexLabel(enexid);
     return 1;
 }
 
@@ -329,7 +353,7 @@ stock UpdateEnexLabel(enexid)
     return 1;
 }
 
-hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys){
+hook OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys){
     foreach(new id : enexID){
         if(newkeys & DEFAULT_KEY){
             if(IsPlayerInRangeOfPoint(playerid, 1.0, enX[id], enY[id], enZ[id]))

@@ -152,6 +152,10 @@ Enex_Open(enexid)
 Enex_Close(enexid)
 Enex_IsClosed(enexid)
 
+// Icone no mapa
+Enex_SetIcon(enexid, iconid, color = -1, MAPICON:style = MAPICON_LOCAL, 
+             Float:streamdistance = STREAMER_MAP_ICON_SD)
+
 // Controle de Acesso
 Enex_OpenForPlayer(playerid, enexid)
 Enex_CloseForPlayer(playerid, enexid)
